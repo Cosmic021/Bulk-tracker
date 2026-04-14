@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>Bulk Tracker</title>
+
+  <!-- PWA Meta Tags -->
+  <meta name="theme-color" content="#080c09"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="Bulk Tracker"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="description" content="Your personal bulk meal & weight tracker"/>
+
+  <!-- Inline PWA Manifest -->
+  <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiQnVsayBUcmFja2VyIiwic2hvcnRfbmFtZSI6IkJ1bGsiLCJzdGFydF91cmwiOiIuIiwiZGlzcGxheSI6InN0YW5kYWxvbmUiLCJiYWNrZ3JvdW5kX2NvbG9yIjoiIzA4MGMwOSIsInRoZW1lX2NvbG9yIjoiIzM5ZTA2YSIsIm9yaWVudGF0aW9uIjoicG9ydHJhaXQifQ=="/>
+
+  <!-- Inline Logo SVG as favicon -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23080c09'/%3E%3C!-- dumbbell bar --%3E%3Crect x='38' y='46' width='24' height='8' rx='3' fill='%2339e06a'/%3E%3C!-- left weight plate outer --%3E%3Crect x='16' y='36' width='14' height='28' rx='5' fill='%2339e06a' opacity='.85'/%3E%3C!-- left weight plate inner handle --%3E%3Crect x='27' y='41' width='7' height='18' rx='3' fill='%230d1a0e'/%3E%3C!-- right weight plate outer --%3E%3Crect x='70' y='36' width='14' height='28' rx='5' fill='%2339e06a' opacity='.85'/%3E%3C!-- right weight plate inner handle --%3E%3Crect x='66' y='41' width='7' height='18' rx='3' fill='%230d1a0e'/%3E%3C!-- flame top --%3E%3Cpath d='M50 18 C50 18 44 26 46 32 C47 35 49 36 50 38 C51 36 53 35 54 32 C56 26 50 18 50 18Z' fill='%2339e06a' opacity='.7'/%3E%3Cpath d='M50 22 C50 22 47 28 48.5 31 C49 32.5 50 33 50 35 C50 33 51 32.5 51.5 31 C53 28 50 22 50 22Z' fill='%23f0a500' opacity='.9'/%3E%3C/svg%3E"/>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html, body { background: #080c09; color: #dde8dd; font-family: 'Sora', sans-serif; min-height: 100vh; overscroll-behavior: none; }
+
+    /* ── INSTALL BANNER ── */
+    #install-banner {
+      display: none;
+      position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
+      background: linear-gradient(90deg, #0f2f10, #0a1a0b);
+      border-bottom: 1px solid #39e06a44;
+      padding: 10px 16px;
+      align-items: center; gap: 10px;
+    }
+    #install-banner .ib-logo {
+      width: 32px; height: 32px; flex-shrink: 0;
+    }
+    #install-banner .ib-text { flex: 1; font-size: 12px; color: #7aaa7a; line-height: 1.4; }
+    #install-banner .ib-text b { color: #39e06a; font-size: 13px; display: block; }
+    #install-banner .ib-btn {
+      background: #39e06a; color: #000; border: none; border-radius: 7px;
+      padding: 7px 13px; font-weight: 700; font-size: 12px; cursor: pointer;
+      font-family: 'Sora', sans-serif; flex-shrink: 0;
+    }
+    #install-banner .ib-close {
+      background: none; border: none; color: #3a5a3a; font-size: 18px; cursor: pointer; padding: 4px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Install Banner -->
+<div id="install-banner">
+  <svg class="ib-logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <rect width="100" height="100" rx="22" fill="#080c09"/>
+    <rect x="38" y="46" width="24" height="8" rx="3" fill="#39e06a"/>
+    <rect x="16" y="36" width="14" height="28" rx="5" fill="#39e06a" opacity=".85"/>
+    <rect x="27" y="41" width="7" height="18" rx="3" fill="#0d1a0e"/>
+    <rect x="70" y="36" width="14" height="28" rx="5" fill="#39e06a" opacity=".85"/>
+    <rect x="66" y="41" width="7" height="18" rx="3" fill="#0d1a0e"/>
+    <path d="M50 18 C50 18 44 26 46 32 C47 35 49 36 50 38 C51 36 53 35 54 32 C56 26 50 18 50 18Z" fill="#39e06a" opacity=".7"/>
+    <path d="M50 22 C50 22 47 28 48.5 31 C49 32.5 50 33 50 35 C50 33 51 32.5 51.5 31 C53 28 50 22 50 22Z" fill="#f0a500" opacity=".9"/>
+  </svg>
+  <div class="ib-text">
+    <b>Install Bulk Tracker</b>
+    Add to home screen for the full app experience
+  </div>
+  <button class="ib-btn" id="install-btn">Install</button>
+  <button class="ib-close" id="banner-close">✕</button>
+</div>
+
+<div id="root"></div>
+
+<!-- React + Babel CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+
+<script type="text/babel">
+const { useState, useEffect, useCallback } = React;
+
+/* ─── CONSTANTS ─────────────────────────────────────────── */
+const MEALS = [
+  { id: "breakfast",   icon: "🌅", name: "Breakfast",         time: "7:00 – 8:00 AM",   protein: 45, kcal: 680,
+    items: ["100g Oats + 250ml Milk", "2 Boiled / Scrambled Eggs"] },
+  { id: "midmorning",  icon: "🫘", name: "Mid-Morning Snack", time: "10:30 – 11:00 AM", protein: 28, kcal: 280,
+    items: ["50g Soya Chunks (boiled)", "1 Banana"] },
+  { id: "lunch",       icon: "🍛", name: "Lunch",             time: "1:00 – 2:00 PM",   protein: 30, kcal: 680,
+    items: ["Rice + Dal (rajma/chana/masoor)", "1–2 Roti + Sabzi", "200g Curd / Dahi"] },
+  { id: "preworkout",  icon: "⚡", name: "Pre-Workout",       time: "4:00 – 4:30 PM",   protein: 14, kcal: 380,
+    items: ["2 Bread + 2 tbsp Peanut Butter", "3g Creatine with water", "Optional: 1 Banana"] },
+  { id: "postworkout", icon: "🥤", name: "Post-Workout Shake",time: "6:30 – 7:00 PM",   protein: 41, kcal: 580,
+    items: ["1 Scoop Whey + 250ml Milk", "2 Bananas"] },
+  { id: "dinner",      icon: "🍗", name: "Dinner",            time: "8:00 – 9:00 PM",   protein: 65, kcal: 760,
+    items: ["300g Chicken (grilled/curry)", "150g Rice or 2 Roti", "1–2 Eggs (if under quota)"] },
+  { id: "presleep",    icon: "🌙", name: "Pre-Sleep",         time: "10:30 – 11:00 PM", protein: 18, kcal: 240,
+    items: ["Sattu Shake (4 tbsp) OR Roasted Chana (80g)", "2 tbsp Peanut Butter"] },
+];
+
+const SLEEP_ALTS = [
+  { name: "Sattu Shake ⭐ BEST", desc: "4 tbsp sattu + water + salt/jaggery. 22g protein/100g. Stores months.", protein: "~18g", price: "₹50–80/kg", note: "Very available in Meerut. Buy 1kg, keeps forever." },
+  { name: "Roasted Chana", desc: "Buy a 1kg bag, keep in your room. No cooking, just eat 80–100g.", protein: "~16g", price: "₹60–90/kg", note: "Bhuna chana. Dry, storable, zero prep." },
+  { name: "Peanut Butter + Bread", desc: "2–3 tbsp PB on 2 bread slices. You already have this!", protein: "~14g", price: "Already have", note: "Easiest option. High calorie + protein." },
+  { name: "Soya Chunks (pre-boiled)", desc: "Cook a morning batch, store in box, eat cold at night.", protein: "~20g", price: "₹80–100/kg", note: "Boil 50g dry in morning. Stays good in fridge or cool place." },
+  { name: "Mixed Dry Peanuts + Chana", desc: "Mix 50g peanuts + 50g roasted chana. Eat as a snack bowl.", protein: "~20g", price: "₹100–150 total", note: "Zero prep. Just buy and keep in a jar." },
+];
+
+const GREEN = "#39e06a";
+const AMBER = "#f0a500";
+
+/* ─── STORAGE (localStorage) ────────────────────────────── */
+const storage = {
+  get: (key) => { try { const v = localStorage.getItem(key); return v ? { value: v } : null; } catch { return null; } },
+  set: (key, val) => { try { localStorage.setItem(key, val); } catch {} },
+};
+
+/* ─── DATE UTILS ─────────────────────────────────────────── */
+function todayKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function dateLabel(key) {
+  const [y,m,d] = key.split("-").map(Number);
+  return new Date(y,m-1,d).toLocaleDateString("en-IN",{weekday:"short",day:"numeric",month:"short"});
+}
+function last7Keys() {
+  const keys = [];
+  for(let i=6;i>=0;i--){
+    const d = new Date(); d.setDate(d.getDate()-i);
+    keys.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`);
+  }
+  return keys;
+}
+function nowTime() { return new Date().toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"}); }
+
+/* ─── STYLES ─────────────────────────────────────────────── */
+const css = `
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{background:#080c09;color:#dde8dd;font-family:'Sora',sans-serif;min-height:100vh;overscroll-behavior:none;}
+.app{max-width:480px;margin:0 auto;padding-bottom:90px;}
+
+/* NAV */
+.nav-bar{
+  position:fixed;bottom:0;left:50%;transform:translateX(-50%);
+  width:100%;max-width:480px;
+  background:#0d120e;border-top:1px solid #1a2a1a;
+  display:flex;z-index:100;
+  padding-bottom:env(safe-area-inset-bottom);
+}
+.nav-btn{
+  flex:1;padding:14px 0 10px;
+  background:none;border:none;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  font-family:'Sora',sans-serif;font-size:10px;letter-spacing:.3px;
+  color:#3a5a3a;transition:color .15s;
+}
+.nav-btn.active{color:#39e06a;}
+.nav-icon{font-size:20px;line-height:1;}
+
+/* HEADER */
+.header{
+  background:linear-gradient(160deg,#0d1f0e 0%,#080c09 70%);
+  padding:24px 20px 16px;
+  border-bottom:1px solid #131f14;
+}
+.header-top{display:flex;justify-content:space-between;align-items:flex-start;}
+.header-date{font-size:11px;color:#3a5a3a;letter-spacing:.5px;text-transform:uppercase;}
+.header-title{font-family:'Bebas Neue',sans-serif;font-size:32px;color:#f0ede6;line-height:1;margin-top:2px;display:flex;align-items:center;gap:10px;}
+.header-title span{color:#39e06a;}
+.header-logo svg{display:block;}
+.streak-badge{
+  background:#0a1a0b;border:1px solid #1a3a1c;
+  border-radius:8px;padding:6px 10px;text-align:center;
+}
+.streak-val{font-family:'Bebas Neue',sans-serif;font-size:22px;color:#39e06a;line-height:1;}
+.streak-lbl{font-size:9px;color:#3a5a3a;letter-spacing:.5px;margin-top:1px;}
+
+/* PROGRESS RING ROW */
+.ring-row{display:flex;gap:10px;padding:14px 20px;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.ring-item{flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:5px;}
+.ring-wrap{position:relative;width:52px;height:52px;}
+.ring-wrap svg{transform:rotate(-90deg);}
+.ring-center{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-family:'Bebas Neue',sans-serif;font-size:13px;color:#dde8dd;
+}
+.ring-name{font-size:9px;color:#3a5a3a;text-align:center;max-width:54px;line-height:1.3;}
+
+/* SECTION */
+.section{padding:0 16px;}
+.sec-title{
+  font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:.5px;color:#8aaa8a;
+  padding:16px 4px 8px;display:flex;align-items:center;gap:6px;
+}
+.sec-title::after{content:'';flex:1;height:1px;background:#1a2a1a;}
+
+/* MEAL CARD */
+.meal-card{
+  background:#0d120e;border:1px solid #182018;border-radius:14px;
+  padding:14px 16px;margin-bottom:8px;
+  display:flex;align-items:center;gap:12px;cursor:pointer;
+  transition:border-color .15s,background .15s;position:relative;overflow:hidden;
+  -webkit-user-select:none;user-select:none;
+}
+.meal-card.done{border-color:#1a3a1c;background:#0a1a0b;}
+.meal-card.done::before{
+  content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:#39e06a;border-radius:3px 0 0 3px;
+}
+.meal-icon-box{
+  font-size:22px;width:44px;height:44px;
+  background:#111c12;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.meal-card.done .meal-icon-box{background:#0f1f10;}
+.meal-info{flex:1;min-width:0;}
+.meal-nm{font-weight:600;font-size:14px;color:#e0ddd6;}
+.meal-time-lbl{font-size:11px;color:#3a5a3a;margin-top:2px;}
+.meal-items{font-size:11px;color:#2a3a2a;margin-top:4px;line-height:1.4;display:none;}
+.meal-card.open .meal-items{display:block;}
+.meal-right{flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:4px;}
+.check-ring{
+  width:28px;height:28px;border-radius:50%;
+  border:2px solid #1e2e1e;display:flex;align-items:center;justify-content:center;
+  font-size:14px;transition:all .2s;background:transparent;cursor:pointer;
+}
+.meal-card.done .check-ring{border-color:#39e06a;background:#0f2f10;color:#39e06a;}
+.macro-tag{font-size:10px;color:#3a5a3a;}
+.done-time{font-size:10px;color:#39e06a;font-weight:600;}
+
+/* DAILY SUMMARY */
+.daily-sum{
+  margin:0 16px 16px;background:#0d120e;border:1px solid #182018;border-radius:14px;padding:16px;
+}
+.sum-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.sum-title{font-family:'Bebas Neue',sans-serif;font-size:18px;color:#f0ede6;}
+.sum-pct{font-family:'Bebas Neue',sans-serif;font-size:28px;color:#39e06a;}
+.bar-track{height:6px;background:#182018;border-radius:99px;overflow:hidden;margin-bottom:12px;}
+.bar-fill{height:100%;background:linear-gradient(90deg,#39e06a,#86efac);border-radius:99px;transition:width .4s ease;}
+.sum-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+.sum-stat{background:#0a0f0b;border-radius:8px;padding:8px;text-align:center;}
+.sum-stat-val{font-family:'Bebas Neue',sans-serif;font-size:18px;color:#dde8dd;}
+.sum-stat-lbl{font-size:9px;color:#3a5a3a;margin-top:1px;letter-spacing:.3px;text-transform:uppercase;}
+
+/* WEEK TAB */
+.week-grid{padding:0 16px;}
+.week-day{
+  background:#0d120e;border:1px solid #182018;border-radius:12px;
+  padding:12px 14px;margin-bottom:8px;
+}
+.week-day-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.week-day-name{font-weight:600;font-size:13px;color:#c0d0c0;}
+.week-day-name.today-lbl{color:#39e06a;}
+.week-day-pct{font-family:'Bebas Neue',sans-serif;font-size:18px;}
+.week-meal-dots{display:flex;gap:5px;flex-wrap:wrap;}
+.mdot{
+  width:32px;height:32px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:14px;border:1px solid #1a2a1a;background:#0a0f0b;
+  position:relative;
+}
+.mdot.done-dot{background:#0a1e0b;border-color:#1a3a1c;}
+.mdot .tick{position:absolute;bottom:-1px;right:-1px;font-size:9px;background:#39e06a;border-radius:50%;width:12px;height:12px;display:flex;align-items:center;justify-content:center;color:#000;font-weight:700;}
+
+/* ALTS TAB */
+.alts-section{padding:0 16px;}
+.alt-intro{
+  background:#0f1a10;border:1px solid #1a3a1c;border-radius:12px;
+  padding:14px;margin-bottom:12px;font-size:13px;color:#7aaa7a;line-height:1.5;
+}
+.alt-card{
+  background:#0d120e;border:1px solid #182018;border-radius:12px;
+  padding:14px 16px;margin-bottom:8px;
+}
+.alt-name{font-weight:700;font-size:14px;color:#e0ddd6;margin-bottom:4px;}
+.alt-desc{font-size:12.5px;color:#5a7a5a;line-height:1.4;margin-bottom:6px;}
+.alt-row{display:flex;gap:8px;flex-wrap:wrap;}
+.alt-chip{font-size:11px;padding:3px 8px;border-radius:99px;border:1px solid;font-weight:600;}
+.chip-g{color:#39e06a;border-color:#1a3a1c;background:#0a1a0b;}
+.chip-y{color:#f0a500;border-color:#3a2800;background:#1a1200;}
+.alt-note{margin-top:6px;font-size:11px;color:#3a5a3a;border-left:2px solid #1a3a1c;padding-left:8px;}
+
+/* WEIGHT TAB */
+.weight-section{padding:0 16px;}
+.weight-input-box{
+  background:#0d120e;border:1px solid #182018;border-radius:14px;padding:16px;margin-bottom:12px;
+}
+.w-label{font-size:12px;color:#3a5a3a;margin-bottom:8px;text-transform:uppercase;letter-spacing:.4px;}
+.w-row{display:flex;gap:8px;align-items:center;}
+.w-input{
+  flex:1;background:#0a0f0b;border:1px solid #1e2e1e;border-radius:8px;
+  padding:10px 14px;font-size:16px;color:#dde8dd;font-family:'Sora',sans-serif;outline:none;
+}
+.w-input:focus{border-color:#39e06a;}
+.w-btn{
+  background:#39e06a;color:#000;border:none;border-radius:8px;
+  padding:10px 16px;font-weight:700;font-size:13px;cursor:pointer;font-family:'Sora',sans-serif;
+  flex-shrink:0;
+}
+.weight-log{margin-top:4px;}
+.wlog-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:10px 0;border-bottom:1px solid #111a12;font-size:13px;
+}
+.wlog-date{color:#5a7a5a;}
+.wlog-val{font-family:'Bebas Neue',sans-serif;font-size:22px;color:#dde8dd;}
+.wlog-diff{font-size:11px;padding:2px 7px;border-radius:99px;font-weight:600;}
+.diff-up{color:#39e06a;background:#0a1e0b;border:1px solid #1a3a1c;}
+.diff-dn{color:#f87171;background:#1e0a0a;border:1px solid #3a1010;}
+.diff-nc{color:#5a7a5a;background:#0a0f0b;border:1px solid #182018;}
+.empty-state{text-align:center;padding:40px 20px;color:#2a3a2a;font-size:13px;}
+
+/* TOAST */
+.toast{
+  position:fixed;top:20px;left:50%;transform:translateX(-50%);
+  background:#0f2f10;border:1px solid #39e06a;border-radius:10px;
+  padding:10px 20px;font-size:13px;color:#39e06a;font-weight:600;
+  z-index:999;white-space:nowrap;pointer-events:none;
+  animation:toastIn .2s ease, toastOut .2s ease 1.6s forwards;
+}
+@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(-8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+@keyframes toastOut{from{opacity:1}to{opacity:0}}
+`;
+
+/* ─── RING COMPONENT ─────────────────────────────────────── */
+function Ring({ pct, size = 52, stroke = 5, color = GREEN, label }) {
+  const r = (size - stroke) / 2;
+  const circ = 2 * Math.PI * r;
+  const dash = (pct / 100) * circ;
+  return (
+    <div className="ring-item">
+      <div className="ring-wrap" style={{ width: size, height: size }}>
+        <svg width={size} height={size}>
+          <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="#1a2a1a" strokeWidth={stroke}/>
+          <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={stroke}
+            strokeDasharray={`${dash} ${circ}`} strokeLinecap="round"/>
+        </svg>
+        <div className="ring-center">{Math.round(pct)}%</div>
+      </div>
+      <div className="ring-name">{label}</div>
+    </div>
+  );
+}
+
+/* ─── APP LOGO ───────────────────────────────────────────── */
+function AppLogo({ size = 36 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <rect width="100" height="100" rx="22" fill="#0d1a0e"/>
+      <rect x="38" y="46" width="24" height="8" rx="3" fill="#39e06a"/>
+      <rect x="16" y="36" width="14" height="28" rx="5" fill="#39e06a" opacity=".85"/>
+      <rect x="27" y="41" width="7" height="18" rx="3" fill="#0d1a0e"/>
+      <rect x="70" y="36" width="14" height="28" rx="5" fill="#39e06a" opacity=".85"/>
+      <rect x="66" y="41" width="7" height="18" rx="3" fill="#0d1a0e"/>
+      <path d="M50 18 C50 18 44 26 46 32 C47 35 49 36 50 38 C51 36 53 35 54 32 C56 26 50 18 50 18Z" fill="#39e06a" opacity=".7"/>
+      <path d="M50 22 C50 22 47 28 48.5 31 C49 32.5 50 33 50 35 C50 33 51 32.5 51.5 31 C53 28 50 22 50 22Z" fill="#f0a500" opacity=".9"/>
+    </svg>
+  );
+}
+
+/* ─── MAIN APP ───────────────────────────────────────────── */
+function App() {
+  const [tab, setTab]               = useState("today");
+  const [dayData, setDayData]       = useState({});
+  const [weekData, setWeekData]     = useState({});
+  const [weights, setWeights]       = useState([]);
+  const [openMeal, setOpenMeal]     = useState(null);
+  const [weightInput, setWeightInput] = useState("");
+  const [toast, setToast]           = useState(null);
+  const [toastKey, setToastKey]     = useState(0);
+  const [loading, setLoading]       = useState(true);
+
+  const today = todayKey();
+
+  /* ── LOAD ── */
+  useEffect(() => {
+    const r1 = storage.get(`meals:${today}`);
+    if (r1) setDayData(JSON.parse(r1.value));
+
+    const week = {};
+    for (const k of last7Keys()) {
+      const r = storage.get(`meals:${k}`);
+      week[k] = r ? JSON.parse(r.value) : {};
+    }
+    setWeekData(week);
+
+    const rw = storage.get("weights");
+    if (rw) setWeights(JSON.parse(rw.value));
+
+    setLoading(false);
+  }, []);
+
+  /* ── SAVE DAY ── */
+  const saveDay = useCallback((data) => {
+    storage.set(`meals:${today}`, JSON.stringify(data));
+    setWeekData(prev => ({ ...prev, [today]: data }));
+  }, [today]);
+
+  /* ── TOGGLE MEAL ── */
+  const toggleMeal = (mealId) => {
+    const already = dayData[mealId]?.done;
+    const updated = {
+      ...dayData,
+      [mealId]: already
+        ? { done: false, time: null }
+        : { done: true, time: nowTime() }
+    };
+    setDayData(updated);
+    saveDay(updated);
+    if (!already) showToast("✅ Logged!");
+  };
+
+  /* ── TOAST ── */
+  const showToast = (msg) => {
+    setToast(msg); setToastKey(k => k+1);
+    setTimeout(() => setToast(null), 2000);
+  };
+
+  /* ── WEIGHT LOG ── */
+  const logWeight = () => {
+    const v = parseFloat(weightInput);
+    if (!v || v < 30 || v > 200) return;
+    const entry = { date: today, weight: v };
+    const updated = [entry, ...weights.filter(w => w.date !== today)].sort((a,b)=>b.date.localeCompare(a.date));
+    setWeights(updated);
+    setWeightInput("");
+    storage.set("weights", JSON.stringify(updated));
+    showToast(`⚖️ ${v} kg saved!`);
+  };
+
+  /* ── COMPUTED ── */
+  const doneCount = MEALS.filter(m => dayData[m.id]?.done).length;
+  const doneProt  = MEALS.filter(m => dayData[m.id]?.done).reduce((s,m)=>s+m.protein,0);
+  const doneKcal  = MEALS.filter(m => dayData[m.id]?.done).reduce((s,m)=>s+m.kcal,0);
+  const totalProt = MEALS.reduce((s,m)=>s+m.protein,0);
+  const totalKcal = MEALS.reduce((s,m)=>s+m.kcal,0);
+  const pct = Math.round((doneCount/MEALS.length)*100);
+
+  /* ── STREAK ── */
+  const streak = (() => {
+    let s = 0;
+    for (const k of [...last7Keys()].reverse()) {
+      const d = weekData[k] || {};
+      const c = MEALS.filter(m=>d[m.id]?.done).length;
+      if (c >= Math.ceil(MEALS.length * 0.7)) s++;
+      else break;
+    }
+    return s;
+  })();
+
+  if (loading) return (
+    <>
+      <style>{css}</style>
+      <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",minHeight:"100vh",gap:16}}>
+        <AppLogo size={64}/>
+        <div style={{color:"#3a5a3a",fontFamily:"'Sora',sans-serif",fontSize:13,letterSpacing:".5px"}}>LOADING YOUR DATA…</div>
+      </div>
+    </>
+  );
+
+  return (
+    <>
+      <style>{css}</style>
+      {toast && <div className="toast" key={toastKey}>{toast}</div>}
+
+      <div className="app">
+        {/* HEADER */}
+        <div className="header">
+          <div className="header-top">
+            <div>
+              <div className="header-date">{new Date().toLocaleDateString("en-IN",{weekday:"long",day:"numeric",month:"long"})}</div>
+              <div className="header-title">
+                <AppLogo size={34}/>
+                BULK<span> TRACKER</span>
+              </div>
+            </div>
+            <div className="streak-badge">
+              <div className="streak-val">{streak}</div>
+              <div className="streak-lbl">DAY STREAK</div>
+            </div>
+          </div>
+        </div>
+
+        {/* MINI RINGS */}
+        {tab === "today" && (
+          <div className="ring-row">
+            <Ring pct={pct} label="Meals Done" color={GREEN}/>
+            <Ring pct={Math.min(100,Math.round((doneProt/totalProt)*100))} label={`${doneProt}g Protein`} color="#60a5fa"/>
+            <Ring pct={Math.min(100,Math.round((doneKcal/totalKcal)*100))} label={`${doneKcal} kcal`} color={AMBER}/>
+            {last7Keys().slice(-3).map(k=>{
+              const d = weekData[k]||{};
+              const c = MEALS.filter(m=>d[m.id]?.done).length;
+              return <Ring key={k} pct={Math.round((c/MEALS.length)*100)} label={dateLabel(k).split(",")[0]} color="#9ca3af"/>;
+            })}
+          </div>
+        )}
+
+        {/* ═══ TODAY TAB ═══ */}
+        {tab === "today" && (
+          <>
+            <div className="daily-sum">
+              <div className="sum-row">
+                <div className="sum-title">TODAY'S PROGRESS</div>
+                <div className="sum-pct">{pct}%</div>
+              </div>
+              <div className="bar-track">
+                <div className="bar-fill" style={{width:`${pct}%`}}/>
+              </div>
+              <div className="sum-stats">
+                <div className="sum-stat">
+                  <div className="sum-stat-val">{doneCount}<span style={{fontSize:11}}> / {MEALS.length}</span></div>
+                  <div className="sum-stat-lbl">Meals Done</div>
+                </div>
+                <div className="sum-stat">
+                  <div className="sum-stat-val" style={{color:"#60a5fa"}}>{doneProt}<span style={{fontSize:11}}>g</span></div>
+                  <div className="sum-stat-lbl">Protein Hit</div>
+                </div>
+                <div className="sum-stat">
+                  <div className="sum-stat-val" style={{color:AMBER}}>{doneKcal}</div>
+                  <div className="sum-stat-lbl">Kcal Eaten</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="section">
+              <div className="sec-title">MEAL CHECKLIST</div>
+              {MEALS.map(meal => {
+                const isDone = !!dayData[meal.id]?.done;
+                const isOpen = openMeal === meal.id;
+                return (
+                  <div
+                    key={meal.id}
+                    className={`meal-card${isDone?" done":""}${isOpen?" open":""}`}
+                    onClick={() => setOpenMeal(isOpen ? null : meal.id)}
+                  >
+                    <div className="meal-icon-box">{meal.icon}</div>
+                    <div className="meal-info">
+                      <div className="meal-nm">{meal.name}</div>
+                      <div className="meal-time-lbl">{meal.time}</div>
+                      <div className="meal-items">
+                        {meal.items.map((it,i)=><div key={i} style={{marginBottom:2}}>· {it}</div>)}
+                      </div>
+                    </div>
+                    <div className="meal-right">
+                      <div
+                        className="check-ring"
+                        onClick={e => { e.stopPropagation(); toggleMeal(meal.id); }}
+                      >
+                        {isDone ? "✓" : ""}
+                      </div>
+                      {isDone
+                        ? <div className="done-time">{dayData[meal.id]?.time}</div>
+                        : <div className="macro-tag">{meal.protein}g P · {meal.kcal} kcal</div>
+                      }
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+
+        {/* ═══ WEEK TAB ═══ */}
+        {tab === "week" && (
+          <div className="week-grid" style={{paddingTop:16}}>
+            <div className="sec-title">7-DAY MEAL LOG</div>
+            {last7Keys().map(k => {
+              const d = weekData[k] || {};
+              const cnt = MEALS.filter(m=>d[m.id]?.done).length;
+              const wpct = Math.round((cnt/MEALS.length)*100);
+              const isToday = k === today;
+              return (
+                <div key={k} className="week-day">
+                  <div className="week-day-header">
+                    <span className={`week-day-name${isToday?" today-lbl":""}`}>
+                      {dateLabel(k)}{isToday?" · Today":""}
+                    </span>
+                    <span className="week-day-pct" style={{color: wpct>=80?GREEN:wpct>=50?AMBER:"#5a7a5a"}}>
+                      {wpct}%
+                    </span>
+                  </div>
+                  <div className="week-meal-dots">
+                    {MEALS.map(m => {
+                      const done = !!d[m.id]?.done;
+                      return (
+                        <div key={m.id} className={`mdot${done?" done-dot":""}`} title={`${m.name}: ${d[m.id]?.time||"not done"}`}>
+                          {m.icon}
+                          {done && <span className="tick">✓</span>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* ═══ ALTS TAB ═══ */}
+        {tab === "alts" && (
+          <div className="alts-section" style={{paddingTop:16}}>
+            <div className="sec-title">PRE-SLEEP ALTERNATIVES</div>
+            <div className="alt-intro">
+              🌙 Since milk isn't always available at night — here are storable, zero-hassle options you can buy once and keep in your room for weeks or months.
+            </div>
+            {SLEEP_ALTS.map((a,i) => (
+              <div key={i} className="alt-card">
+                <div className="alt-name">{a.name}</div>
+                <div className="alt-desc">{a.desc}</div>
+                <div className="alt-row">
+                  <span className="alt-chip chip-g">~{a.protein} protein</span>
+                  <span className="alt-chip chip-y">{a.price}</span>
+                </div>
+                <div className="alt-note">{a.note}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ═══ WEIGHT TAB ═══ */}
+        {tab === "weight" && (
+          <div className="weight-section" style={{paddingTop:16}}>
+            <div className="sec-title">WEIGHT LOG</div>
+            <div className="weight-input-box">
+              <div className="w-label">Log Today's Weight</div>
+              <div className="w-row">
+                <input
+                  className="w-input"
+                  type="number"
+                  step="0.1"
+                  inputMode="decimal"
+                  placeholder="e.g. 69.5"
+                  value={weightInput}
+                  onChange={e=>setWeightInput(e.target.value)}
+                  onKeyDown={e=>e.key==="Enter"&&logWeight()}
+                />
+                <button className="w-btn" onClick={logWeight}>SAVE KG</button>
+              </div>
+            </div>
+
+            <div className="weight-log">
+              {weights.length === 0 && <div className="empty-state">No weight entries yet.<br/>Log your first weight above ↑</div>}
+              {weights.map((entry, i) => {
+                const prev = weights[i+1];
+                const diff = prev ? (entry.weight - prev.weight) : null;
+                return (
+                  <div key={entry.date} className="wlog-row">
+                    <span className="wlog-date">{dateLabel(entry.date)}</span>
+                    <div style={{display:"flex",alignItems:"center",gap:8}}>
+                      {diff !== null && (
+                        <span className={`wlog-diff ${diff>0?"diff-up":diff<0?"diff-dn":"diff-nc"}`}>
+                          {diff>0?"+":""}{diff.toFixed(1)} kg
+                        </span>
+                      )}
+                      <span className="wlog-val">{entry.weight} <span style={{fontSize:13,color:"#5a7a5a"}}>kg</span></span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {weights.length > 0 && (
+              <div style={{marginTop:16,background:"#0d120e",border:"1px solid #182018",borderRadius:12,padding:14}}>
+                <div style={{fontSize:11,color:"#3a5a3a",textTransform:"uppercase",letterSpacing:".4px",marginBottom:6}}>Goal Progress</div>
+                <div style={{display:"flex",justifyContent:"space-between",marginBottom:8,fontSize:13}}>
+                  <span style={{color:"#5a7a5a"}}>Start: <b style={{color:"#dde8dd"}}>69 kg</b></span>
+                  <span style={{color:"#5a7a5a"}}>Current: <b style={{color:GREEN}}>{weights[0]?.weight} kg</b></span>
+                  <span style={{color:"#5a7a5a"}}>Goal: <b style={{color:"#dde8dd"}}>80 kg</b></span>
+                </div>
+                <div className="bar-track">
+                  <div className="bar-fill" style={{width:`${Math.min(100,((weights[0]?.weight-69)/(80-69))*100)}%`}}/>
+                </div>
+                <div style={{fontSize:11,color:"#3a5a3a",marginTop:6}}>
+                  {(80 - (weights[0]?.weight||69)).toFixed(1)} kg remaining to goal
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* BOTTOM NAV */}
+      <nav className="nav-bar">
+        {[
+          { id:"today",  icon:"☑️", label:"Today"  },
+          { id:"week",   icon:"📅", label:"Week"   },
+          { id:"alts",   icon:"🌙", label:"Night"  },
+          { id:"weight", icon:"⚖️", label:"Weight" },
+        ].map(n => (
+          <button key={n.id} className={`nav-btn${tab===n.id?" active":""}`} onClick={()=>setTab(n.id)}>
+            <span className="nav-icon">{n.icon}</span>
+            {n.label}
+          </button>
+        ))}
+      </nav>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+
+<!-- PWA Install Prompt + Service Worker -->
+<script>
+  /* ── INSTALL BANNER ── */
+  let deferredPrompt = null;
+  const banner   = document.getElementById("install-banner");
+  const installBtn = document.getElementById("install-btn");
+  const closeBtn = document.getElementById("banner-close");
+
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    banner.style.display = "flex";
+    // Push app content down
+    document.querySelector("#root").style.paddingTop = "56px";
+  });
+
+  installBtn.addEventListener("click", async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    banner.style.display = "none";
+    document.querySelector("#root").style.paddingTop = "";
+  });
+
+  closeBtn.addEventListener("click", () => {
+    banner.style.display = "none";
+    document.querySelector("#root").style.paddingTop = "";
+  });
+
+  window.addEventListener("appinstalled", () => {
+    banner.style.display = "none";
+    document.querySelector("#root").style.paddingTop = "";
+  });
+
+  /* ── SERVICE WORKER (offline cache) ── */
+  if ("serviceWorker" in navigator) {
+    const swCode = `
+      const CACHE = "bulk-tracker-v1";
+      const ASSETS = ["/"];
+      self.addEventListener("install", e => {
+        e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
+        self.skipWaiting();
+      });
+      self.addEventListener("fetch", e => {
+        e.respondWith(
+          caches.match(e.request).then(r => r || fetch(e.request).catch(() => caches.match("/")))
+        );
+      });
+    `;
+    const blob = new Blob([swCode], { type: "application/javascript" });
+    const swUrl = URL.createObjectURL(blob);
+    navigator.serviceWorker.register(swUrl).catch(() => {});
+  }
+</script>
+</body>
+</html>
